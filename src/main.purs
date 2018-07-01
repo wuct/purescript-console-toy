@@ -38,15 +38,15 @@ selectComponent = StoreT $ Tuple (Identity render) { count: 1, selectedValue: 0 
       onChange: \input -> do
         log $ "You've played " <> show count <> " times."
         case fromString input of
-          Nothing -> do
+          Nothing -> send do
             log "Please enter an Integer."
-            send $ put { count: count + 1, selectedValue }
-          Just x -> do
+            pure $ put { count: count + 1, selectedValue }
+          Just x -> send do
             log $ "Selected value: " <> input
             let renderOptions option = log $ option.label <> 
               if option.value == x then " *" else ""
             traverse_ renderOptions options
-            send $ put { count: count + 1, selectedValue: x }
+            pure $ put { count: count + 1, selectedValue: x }
                  
       } 
 

@@ -20,7 +20,7 @@ import Node.ReadLine (close, createConsoleInterface, noCompletion, prompt, setLi
 move :: forall w m a b. Comonad w => Monad m => m ⋈ w -> m a -> w b -> w b
 move pairing movement space = pairing (\_ newspace -> newspace) movement (duplicate space)
 
-type UI base m a = (m Unit -> base Unit) -> a
+type UI base m a = (base (m Unit) -> base Unit) -> a
 type Component base w m a = w (UI base m a)
 
 stateStore :: forall s. State s ⋈ Store s
@@ -47,7 +47,10 @@ explore component = do
         close interface
       else do 
         space <- read componentRef
-        let send action = write (move stateStore action space) componentRef
-        let Console { onChange } = extract space send
+        let 
+          send mAction = do
+            action <- mAction
+            write (move stateStore action space) componentRef
+          Console { onChange } = extract space send
         onChange s
         prompt interface 
