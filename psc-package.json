@@ -1,8 +1,11 @@
 {
   "name": "purescript-console-toy",
-  "set": "psc-0.12.0",
-  "source": "https://github.com/purescript/package-sets.git",
+  "set": "crystal-ball",
+  "source": "https://github.com/wuct/package-sets.git",
   "depends": [
+    "pairing",
+    "transformers",
+    "control",
     "node-readline",
     "refs",
     "foldable-traversable",

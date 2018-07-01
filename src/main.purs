@@ -2,65 +2,54 @@ module Main where
 
 import Prelude
 
+import Control.Comonad.Store (Store, StoreT(..))
+import Control.Monad.State (State, put)
+import Data.Identity (Identity(..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Console (log)
-import Effect.Ref (Ref, new, read, write)
-import Node.ReadLine (close, createConsoleInterface, noCompletion, prompt, setLineHandler, setPrompt)
+import Lib (Component, Console(..), UI, explore)
 
-type Option a = {
-  label :: String,
-  value :: a
-}
-
-type Props a = {
-  value :: a,
-  options :: Array (Option a)
-}
-
-options :: Array (Option Int)
+options :: 
+  Array 
+    { label :: String
+    , value :: Int
+    }
 options = [
   { value: 1, label: "One" },
   { value: 2, label: "Two" },
   { value: 3, label: "Three" }
 ]
 
-render :: forall a
-   . Show a
-  => Eq a 
-  => Props a -> Effect Unit
-
-render props = do
-  log $ "Selected value: " <> show props.value
-  traverse_ renderOptions props.options
-    where
-      renderOptions option = log $ option.label <> if option.value == props.value
-        then " *"
-        else ""
-
-ui :: Ref Int -> Maybe Int -> Effect Unit
-ui _ Nothing = log "Please enter an Integer."
-ui countRef (Just selectedValue) = do
-  count <- read countRef
-  log $ "You've played " <> show count <> " times."
-  write (count + 1) countRef
-  render { 
-    options,
-    value: selectedValue 
+type Props =
+  { count :: Int
+  , selectedValue :: Int
   }
+
+selectComponent :: Component Effect (Store Props) (State Props) Console
+selectComponent = StoreT $ Tuple (Identity render) { count: 1, selectedValue: 0 }
+  where
+    render :: Props -> UI Effect (State Props) Console
+    render { count, selectedValue } send = Console {
+      value: show selectedValue,
+      onChange: \input -> do
+        log $ "You've played " <> show count <> " times."
+        case fromString input of
+          Nothing -> do
+            log "Please enter an Integer."
+            send $ put { count: count + 1, selectedValue }
+          Just x -> do
+            log $ "Selected value: " <> input
+            let renderOptions option = log $ option.label <> 
+              if option.value == x then " *" else ""
+            traverse_ renderOptions options
+            send $ put { count: count + 1, selectedValue: x }
+                 
+      } 
 
 main :: Effect Unit
 main = do
-  countRef <- new 0
-  interface <- createConsoleInterface noCompletion
-  setPrompt "> " 0 interface
-  prompt interface
-  setLineHandler interface $ \s ->
-    if s == "q"
-      then close interface
-      else do 
-        ui countRef $ fromString s      
-        prompt interface
-  
+  explore selectComponent
