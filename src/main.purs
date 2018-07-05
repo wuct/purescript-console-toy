@@ -2,13 +2,11 @@ module Main where
 
 import Prelude
 
-import Control.Comonad.Store (Store, StoreT(..))
+import Control.Comonad.Store (Store, store)
 import Control.Monad.State (State, put)
-import Data.Identity (Identity(..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Console (log)
 import Lib (Component, Console(..), UI, explore)
@@ -30,7 +28,7 @@ type Props =
   }
 
 selectComponent :: Component Effect (Store Props) (State Props) Console
-selectComponent = StoreT $ Tuple (Identity render) { count: 1, selectedValue: 0 }
+selectComponent = store render { count: 1, selectedValue: 0 }
   where
     render :: Props -> UI Effect (State Props) Console
     render { count, selectedValue } send = Console {
